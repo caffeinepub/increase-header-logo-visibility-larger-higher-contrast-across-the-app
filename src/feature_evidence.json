@@ -1,0 +1,47 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-update-the-top-left-header-logo-in-frontend-src-components-header-tsx-to-be-more-visible-across-the-entire-app-by-a-increasing-its-rendered-size-on-mobile-and-desktop-and-b-improving-contrast-against-both-light-and-dark-backgrounds-e-g-adding-a-subtle-background-badge-border-ring-and-or-shadow-around-the-logo-image",
+      "featureTitle": "Update the top-left header logo in `frontend/src/components/Header.tsx` to be more visible across the entire app by (a) increasing its rendered size on mobile and desktop and (b) improving contrast against both light and dark backgrounds (e.g., adding a subtle background/badge, border/ring, and/or shadow around the logo image).",
+      "files": [
+        "frontend/src/components/Header.tsx"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "blob-storage@2.0.3",
+        "invite-links@1.0.1",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-if-needed-to-achieve-higher-contrast-create-and-use-a-higher-contrast-variant-of-the-existing-generated-logo-asset-referenced-by-the-header-assets-generated-platform-logo-transparent-dim-200x200-png-and-update-the-header-to-use-the-new-asset-path-consistently",
+      "featureTitle": "If needed to achieve higher contrast, create and use a higher-contrast variant of the existing generated logo asset referenced by the header (`/assets/generated/platform-logo-transparent.dim_200x200.png`) and update the header to use the new asset path consistently.",
+      "files": [
+        "frontend/src/components/Header.tsx"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "blob-storage@2.0.3",
+        "invite-links@1.0.1",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

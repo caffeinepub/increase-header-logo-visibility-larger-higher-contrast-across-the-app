@@ -1,0 +1,79 @@
+{
+  "kind": "build_request",
+  "title": "Increase header logo visibility (larger + higher contrast) across the app",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Update the top-left header logo in `frontend/src/components/Header.tsx` to be more visible across the entire app by (a) increasing its rendered size on mobile and desktop and (b) improving contrast against both light and dark backgrounds (e.g., adding a subtle background/badge, border/ring, and/or shadow around the logo image).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-6",
+          "msg-8",
+          "msg-14",
+          "msg-16"
+        ],
+        "quotes": [
+          "Make the logo more visible",
+          "1. App logo(hearder) on the top left\n2. Larger size and higher contrast\n3. Yes they should apply",
+          "build out the logo",
+          "yes build"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The logo in the header top-left is visibly larger than the current `h-8 w-8` (mobile) / `sm:h-10 sm:w-10` (desktop) sizing.",
+        "The logo remains clearly visible (high contrast) on both light mode and dark mode header backgrounds.",
+        "The change is applied everywhere the header appears (all pages routed via `App.tsx`).",
+        "No other navigation/header functionality is broken (logo click still navigates to the landing page)."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "If needed to achieve higher contrast, create and use a higher-contrast variant of the existing generated logo asset referenced by the header (`/assets/generated/platform-logo-transparent.dim_200x200.png`) and update the header to use the new asset path consistently.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-6",
+          "msg-8",
+          "msg-14"
+        ],
+        "quotes": [
+          "Make the logo more visible",
+          "Larger size and higher contrast",
+          "build out the logo"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A higher-contrast logo asset exists under `frontend/public/assets/generated/` and is referenced by `Header.tsx` (no backend routing for the image).",
+        "The new logo asset retains transparent edges cleanly (no unintended background artifacts) and appears sharper/more readable at the new size."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not modify any files under `frontend/src/components/ui` (read-only UI primitives).",
+    "Do not modify files listed as immutable: `frontend/src/hooks/useInternetIdentity.ts`, `frontend/src/hooks/useInternetIdentity.tsx`, `frontend/src/hooks/useActor.ts`, `frontend/src/main.tsx`.",
+    "Keep all changes frontend-only; do not change Motoko backend state or interfaces for this request."
+  ],
+  "nonGoals": [
+    "Fixing the prior production deployment failure/error.",
+    "Changing the app name text ('AgriVenture') or tagline ('Funding Platform') unless required for logo visibility.",
+    "Redesigning the overall header layout/navigation beyond what is necessary to improve logo visibility."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": [
+      "Increase contrast/clarity of the logo mark (platform-logo-transparent.dim_200x200.png > platform-logo-high-contrast.dim_200x200.png)"
+    ]
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
+  }
+}

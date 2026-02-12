@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "New project",
+  "architectural_notes": [],
+  "known_issues": [
+    "Production deployment failed with a deployment error (Version 30 publish attempt)"
+  ],
+  "isFixRequest": false,
+  "imageRequirements": "## Edit Images\n- Increase contrast/clarity of the logo mark (platform-logo-transparent.dim_200x200.png > platform-logo-high-contrast.dim_200x200.png)",
+  "existing_features": [
+    {
+      "id": "feature-update-the-top-left-header-logo-in-frontend-src-components-header-tsx-to-be-more-visible-across-the-entire-app-by-a-increasing-its-rendered-size-on-mobile-and-desktop-and-b-improving-contrast-against-both-light-and-dark-backgrounds-e-g-adding-a-subtle-background-badge-border-ring-and-or-shadow-around-the-logo-image",
+      "title": "Update the top-left header logo in `frontend/src/components/Header.tsx` to be more visible across the entire app by (a) increasing its rendered size on mobile and desktop and (b) improving contrast against both light and dark backgrounds (e.g., adding a subtle background/badge, border/ring, and/or shadow around the logo image).",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-if-needed-to-achieve-higher-contrast-create-and-use-a-higher-contrast-variant-of-the-existing-generated-logo-asset-referenced-by-the-header-assets-generated-platform-logo-transparent-dim-200x200-png-and-update-the-header-to-use-the-new-asset-path-consistently",
+      "title": "If needed to achieve higher contrast, create and use a higher-contrast variant of the existing generated logo asset referenced by the header (`/assets/generated/platform-logo-transparent.dim_200x200.png`) and update the header to use the new asset path consistently.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Make the app header (top-left) logo more visible by increasing size and contrast across the entire app",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Increase header logo visibility (larger + higher contrast) across the app",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

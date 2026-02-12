@@ -1,0 +1,49 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Increase header logo visibility across the app",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "summary": "Make the header top-left logo larger on mobile/desktop and improve its contrast on both light and dark header backgrounds without breaking navigation.",
+      "acceptanceCriteria": [
+        "The logo in the header top-left is visibly larger than the current `h-8 w-8` (mobile) / `sm:h-10 sm:w-10` (desktop) sizing.",
+        "The logo remains clearly visible (high contrast) on both light mode and dark mode header backgrounds.",
+        "The change is applied everywhere the header appears (all pages routed via `App.tsx`).",
+        "No other navigation/header functionality is broken (logo click still navigates to the landing page)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/Header.tsx",
+          "operation": "modify",
+          "description": "Increase the rendered logo size for mobile and desktop, and add a subtle high-contrast treatment around the logo (e.g., badge/background + ring/border + shadow and/or image drop-shadow) using Tailwind classes so it stays readable in both light and dark modes. Keep the existing click handler to navigate to the landing page and avoid modifying any `frontend/src/components/ui` primitives."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Verify the header usage remains unchanged and continues to be rendered for all routed pages (ensuring the logo visibility change applies app-wide via `App.tsx` composition). No routing/layout changes beyond what’s necessary for verification."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Add a higher-contrast generated logo asset and switch the header to reference it consistently if needed for readability at the new size.",
+      "acceptanceCriteria": [
+        "A higher-contrast logo asset exists under `frontend/public/assets/generated/` and is referenced by `Header.tsx` (no backend routing for the image).",
+        "The new logo asset retains transparent edges cleanly (no unintended background artifacts) and appears sharper/more readable at the new size."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/public/assets/generated/platform-logo-high-contrast.dim_200x200.png",
+          "operation": "create",
+          "description": "Create a higher-contrast variant of the existing generated logo mark (as specified in image edits) with clean transparency and improved clarity at larger sizes. This must be a static frontend asset under `frontend/public/assets/generated/` (no backend storage/routing)."
+        },
+        {
+          "path": "frontend/src/components/Header.tsx",
+          "operation": "modify",
+          "description": "Update the logo image `src` to reference the new asset path `frontend/public/assets/generated/platform-logo-high-contrast.dim_200x200.png` consistently for the header logo, ensuring it remains readable against both light and dark backgrounds while preserving existing navigation behavior."
+        }
+      ]
+    }
+  ]
+}
