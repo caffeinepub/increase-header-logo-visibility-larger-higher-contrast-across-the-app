@@ -1,79 +1,77 @@
 {
   "kind": "build_request",
-  "title": "Increase header logo visibility (larger + higher contrast) across the app",
+  "title": "Revert currency scaling regression so dashboards display correct amounts and calculations use raw stored values",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the top-left header logo in `frontend/src/components/Header.tsx` to be more visible across the entire app by (a) increasing its rendered size on mobile and desktop and (b) improving contrast against both light and dark backgrounds (e.g., adding a subtle background/badge, border/ring, and/or shadow around the logo image).",
+      "text": "Remove any frontend money display logic that heuristically rescales stored values (e.g., dividing/multiplying by 100 based on magnitude) and ensure all monetary amounts are displayed strictly by converting backend-stored cents to units exactly once using the centralized money utilities.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6",
-          "msg-8",
-          "msg-14",
-          "msg-16"
+          "msg-1"
         ],
         "quotes": [
-          "Make the logo more visible",
-          "1. App logo(hearder) on the top left\n2. Larger size and higher contrast\n3. Yes they should apply",
-          "build out the logo",
-          "yes build"
+          "I want you to reset the changes you made in the app in version 30.",
+          "the values should display exactly the way they are entered",
+          "It was only displayed incorrectly in the dashbaord"
         ]
       },
       "acceptanceCriteria": [
-        "The logo in the header top-left is visibly larger than the current `h-8 w-8` (mobile) / `sm:h-10 sm:w-10` (desktop) sizing.",
-        "The logo remains clearly visible (high contrast) on both light mode and dark mode header backgrounds.",
-        "The change is applied everywhere the header appears (all pages routed via `App.tsx`).",
-        "No other navigation/header functionality is broken (logo click still navigates to the landing page)."
+        "No UI path divides/multiplies amounts by 100 based on heuristics (e.g., removes/avoids use of normalizeExpenseAmount-style logic for display).",
+        "All displayed monetary values are derived from backend values via a single, consistent conversion (e.g., centsToUnits / formatMoneyFromCents).",
+        "Regression test: an amount entered as 100.00 displays as 100.00 (not 10000.00 or 1.00) everywhere it appears in dashboards and lists."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "If needed to achieve higher contrast, create and use a higher-contrast variant of the existing generated logo asset referenced by the header (`/assets/generated/platform-logo-transparent.dim_200x200.png`) and update the header to use the new asset path consistently.",
+      "text": "Audit and fix all dashboard-related pages/components so that amounts and totals (including group cards, group dashboards, returns, payouts, and summary tiles) use consistent formatting and correct arithmetic: sums should be computed in cents (integer) and converted for display at the final step, with no double-conversion or mixed unit math.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6",
-          "msg-8",
-          "msg-14"
+          "msg-1"
         ],
         "quotes": [
-          "Make the logo more visible",
-          "Larger size and higher contrast",
-          "build out the logo"
+          "make sure all the calculations of entered information are done well without scaling values"
         ]
       },
       "acceptanceCriteria": [
-        "A higher-contrast logo asset exists under `frontend/public/assets/generated/` and is referenced by `Header.tsx` (no backend routing for the image).",
-        "The new logo asset retains transparent edges cleanly (no unintended background artifacts) and appears sharper/more readable at the new size."
+        "All dashboard totals (e.g., total raised/spent/revenue/net profit/remaining balance, contribution totals, payout totals, returns totals) match the underlying stored values when verified by manual calculation from the same source data.",
+        "No component mixes cents and units in the same calculation (e.g., does not add a cents value to a units value).",
+        "Currency display is consistently rendered with the group currency code and exactly two decimals across dashboard views."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Ensure backend data contracts for monetary values used by dashboards are consistent (all monetary amounts returned to the frontend are in cents as integers) and do not apply any scaling or formatting before returning values; adjust backend calculations if any endpoint currently returns unit values or scaled values.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "If the backend data is viewable, check if the data is consistent for the live app"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Backend methods used by dashboard/summary endpoints return monetary values in cents consistently (no mixed units across fields).",
+        "Backend computations (e.g., totals and net profit) are performed using integer cents only.",
+        "No state migration is introduced since the user confirmed stored values are already correct (display-only bug)."
       ]
     }
   ],
   "constraints": [
-    "Do not modify any files under `frontend/src/components/ui` (read-only UI primitives).",
-    "Do not modify files listed as immutable: `frontend/src/hooks/useInternetIdentity.ts`, `frontend/src/hooks/useInternetIdentity.tsx`, `frontend/src/hooks/useActor.ts`, `frontend/src/main.tsx`.",
-    "Keep all changes frontend-only; do not change Motoko backend state or interfaces for this request."
+    "Frontend files under frontend/immutablePaths must not be modified (compose existing UI components instead).",
+    "Maintain the single-actor Motoko backend architecture; place backend logic changes only in backend/main.mo and add backend/migration.mo only if state schema changes (not expected for this fix).",
+    "Use English for all user-facing UI text."
   ],
   "nonGoals": [
-    "Fixing the prior production deployment failure/error.",
-    "Changing the app name text ('AgriVenture') or tagline ('Funding Platform') unless required for logo visibility.",
-    "Redesigning the overall header layout/navigation beyond what is necessary to improve logo visibility."
+    "Do not modify or attempt to repair existing stored transaction amounts (user confirmed data is correct and only display was wrong).",
+    "Do not add new financial features, currencies, or payment providers.",
+    "Do not implement external data checks against 'live app' outside the canister (no external database/analytics access)."
   ],
   "imageRequirements": {
     "required": [],
-    "edits": [
-      "Increase contrast/clarity of the logo mark (platform-logo-transparent.dim_200x200.png > platform-logo-high-contrast.dim_200x200.png)"
-    ]
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
+    "edits": []
   }
 }

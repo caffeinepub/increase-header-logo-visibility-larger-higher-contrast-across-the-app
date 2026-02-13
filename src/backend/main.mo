@@ -507,10 +507,10 @@ actor AgricultureVenturePlatform {
       Debug.trap("Amount cannot be negative");
     };
     let allowedMinCents = 1; // Minimum allowed is 1 cent
-    let allowedMaxCents = 1_000_000_000; // 10 million in cents
+    let allowedMaxCents = 10_000_000; // 10 million in cents
 
     if (amount < allowedMinCents or amount > allowedMaxCents) {
-      Debug.trap("Amount must be in cents (1-10,000,000.00)");
+      Debug.trap("Amount must be in cents (1-10,000,000)");
     };
     let maxAmountWithDecimal = 100; // 1 dollar/euro with decimal cents
 
@@ -721,7 +721,7 @@ actor AgricultureVenturePlatform {
         );
 
         let remainingBalance = totalContributions - totalSpent;
-        let netProfit : Int = totalRevenue - Int.abs(totalSpent);
+        let netProfit : Int = totalRevenue - totalSpent;
 
         let memberCount = if (group.members.size() == 0) { 1 } else {
           group.members.size();
@@ -791,7 +791,7 @@ actor AgricultureVenturePlatform {
         );
 
         let remainingBalance = totalRaised - totalSpent;
-        let netProfit : Int = totalRevenue - Int.abs(totalSpent);
+        let netProfit : Int = totalRevenue - totalSpent;
 
         {
           totalRaised;
@@ -1125,7 +1125,7 @@ actor AgricultureVenturePlatform {
       func(acc, p) { acc + p.amount },
     );
 
-    let netProfit : Int = totalReceived - Int.abs(totalContributed);
+    let netProfit : Int = totalReceived - totalContributed;
 
     {
       totalContributed;
@@ -1176,7 +1176,7 @@ actor AgricultureVenturePlatform {
         );
 
         let remainingBalance = totalContributions - totalSpent;
-        let netProfit : Int = totalRevenue - Int.abs(totalSpent);
+        let netProfit : Int = totalRevenue - totalSpent;
 
         let memberCount = if (group.members.size() == 0) { 1 } else {
           group.members.size();
@@ -1368,3 +1368,4 @@ actor AgricultureVenturePlatform {
   transient let _dailyTimer = Timer.recurringTimer<system>(#nanoseconds(oneDayNanos), func() : async () { await runDailyTasks() });
   transient let _weeklyTimer = Timer.recurringTimer<system>(#nanoseconds(oneWeekNanos), func() : async () { await runWeeklyTasks() });
 };
+

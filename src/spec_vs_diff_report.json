@@ -1,39 +1,84 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T17:58:31.641Z",
-  "summary": "Header logo styling in `frontend/src/components/Header.tsx` was updated to render larger (h-10/w-10 mobile, sm:h-12/sm:w-12 desktop) with added background/ring/shadow for contrast, and the image source was changed to a new high-contrast asset path. However, the diff shows no new asset file added under `frontend/public/assets/generated/`, so the requested high-contrast logo file itself is not evidenced as present.",
+  "generatedAt": "2026-02-13T23:43:11.843Z",
+  "summary": "The diff partially addresses cent-based arithmetic by introducing frontend moneyMath helpers and updating some pages/components, but it still contains manual /100 conversions (not centralized utilities), and the backend cent-only contract changes required for dashboards are not evidenced in the provided backend diff. Additionally, several unrelated UI/feature changes appear in the frontend summaries (e.g., crop templates/milestone generation, branding/landing page updates, navigation and deletion behaviors) that were not requested by the BuildRequest.",
   "missing_requirements": [
     {
-      "id": "REQ-2",
-      "requirement": "Create and use a higher-contrast variant of the existing generated logo asset under `frontend/public/assets/generated/` and reference it from `Header.tsx`.",
-      "reason": "`Header.tsx` now references `/assets/generated/platform-logo-high-contrast.dim_200x200.png`, but the diff shows no added files; therefore there is no evidence the new higher-contrast image asset actually exists under `frontend/public/assets/generated/`.",
+      "id": "REQ-1",
+      "requirement": "Remove any frontend money display logic that heuristically rescales stored values and ensure all monetary amounts are displayed strictly by converting backend-stored cents to units exactly once using the centralized money utilities.",
+      "reason": "The diff still shows direct division by 100 for display-related totals instead of using centralized money utilities (e.g., centsToUnits/formatMoneyFromCents), and the content of normalizeExpenseAmount.ts is not shown so removal of heuristic scaling cannot be verified.",
       "evidence": [
-        "File diff summary shows \"Added: 0\" (no added files)",
-        "frontend/src/components/Header.tsx (references /assets/generated/platform-logo-high-contrast.dim_200x200.png)"
+        "frontend/src/components/PayoutCalculator.tsx",
+        "frontend/src/pages/Contributions.tsx",
+        "frontend/src/lib/normalizeExpenseAmount.ts"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "requirement": "Fix all dashboard-related pages/components so amounts and totals use consistent formatting and correct arithmetic: sums computed in cents and converted for display only at the final step, with no double-conversion or mixed unit math.",
+      "reason": "At least some totals are computed then converted via manual /100 rather than via a single consistent conversion utility; also GroupDashboard computes derived values (e.g., fundsSpentPercentage) after converting totals to units, which does not demonstrate the required cents-first approach across dashboard computations. The diff summary is truncated, so full dashboard coverage (group cards, returns, payouts, summary tiles) cannot be confirmed.",
+      "evidence": [
+        "frontend/src/components/PayoutCalculator.tsx",
+        "frontend/src/pages/Contributions.tsx",
+        "frontend/src/pages/GroupDashboard.tsx",
+        "frontend/src/pages/Dashboard.tsx"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Ensure backend dashboard monetary contracts are consistent (all monetary amounts returned to frontend are integer cents) with no scaling/formatting in responses; perform backend computations using integer cents only; no state migration.",
+      "reason": "backend/main.mo is modified, but the shown diff portion concerns crop templates and group creation logic and provides no evidence of changes to dashboard/summary endpoints or monetary calculations/contracts. Therefore the required backend cent-only contract consistency cannot be verified from the provided diff summary.",
+      "evidence": [
+        "backend/main.mo"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Updated/introduced project tracking metadata in `project_state.json` (new_feature_requests AR-1/AR-2/AR-3 marked pending).",
-      "reason": "BuildRequest only asks for frontend header logo visibility changes and optional new logo asset; it does not request modifications to project tracking/state files.",
+      "description": "Crop lifecycle templates and automatic milestone generation logic (and related UI) not requested as part of the currency scaling regression fix.",
+      "reason": "BuildRequest is narrowly about reverting currency scaling for correct display/calculation; no requirements mention crop templates or milestone generation.",
       "evidence": [
-        "project_state.json"
+        "backend/main.mo",
+        "frontend-file-summaries.txt (CreateGroupDialog summary)"
       ]
     },
     {
-      "description": "Updated `frontend-file-summaries.txt` content.",
-      "reason": "BuildRequest does not request changes to documentation/summary files; only the header logo and (if needed) an asset change were requested.",
+      "description": "Branding/marketing and landing page content changes (hero section, Africa-focused marketing text, high-impact CTAs) unrelated to currency scaling regression.",
+      "reason": "Not requested by any REQ; BuildRequest constraints focus on monetary display/calculation correctness.",
       "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend-file-summaries.txt (LandingPage summary)"
+      ]
+    },
+    {
+      "description": "High-contrast logo asset/styling changes in Header.",
+      "reason": "Not requested; unrelated to monetary scaling regression.",
+      "evidence": [
+        "frontend-file-summaries.txt (Header summary)"
+      ]
+    },
+    {
+      "description": "New/changed behaviors like auto-navigation after joining groups and addition of delete contribution/expense flows.",
+      "reason": "Not requested by BuildRequest; scope is limited to money scaling regression and cent/unit consistency.",
+      "evidence": [
+        "frontend-file-summaries.txt (MyGroups summary)",
+        "frontend-file-summaries.txt (useQueries summary)",
+        "frontend/src/pages/Contributions.tsx",
+        "frontend/src/pages/GroupDetail.tsx"
       ]
     }
   ],
-  "confidence": 0.72,
+  "confidence": 0.68,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/Header.tsx",
+    "frontend/src/components/PayoutCalculator.tsx",
+    "frontend/src/lib/moneyMath.ts",
+    "frontend/src/lib/normalizeExpenseAmount.ts",
+    "frontend/src/pages/Contributions.tsx",
+    "frontend/src/pages/Dashboard.tsx",
+    "frontend/src/pages/GroupDashboard.tsx",
+    "frontend/src/pages/GroupDetail.tsx",
     "project_state.json"
   ]
 }

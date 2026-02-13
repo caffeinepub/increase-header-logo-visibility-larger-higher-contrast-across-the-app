@@ -18,6 +18,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { centsToUnits } from '../lib/money';
+import { sumCentsNumeric } from '../lib/moneyMath';
 
 export default function Contributions() {
   const { identity } = useInternetIdentity();
@@ -44,17 +46,15 @@ export default function Contributions() {
     (c) => c.member.toString() === userPrincipal
   ) || [];
 
-  const totalPaid = myContributions
-    .filter((c) => c.status === 'paid')
-    .reduce((sum, c) => sum + Number(c.amount), 0);
+  // Calculate totals in cents first, then convert
+  const paidCents = myContributions.filter(c => c.status === 'paid').map(c => Number(c.amount));
+  const totalPaid = sumCentsNumeric(paidCents) / 100;
 
-  const totalPending = myContributions
-    .filter((c) => c.status === 'pending')
-    .reduce((sum, c) => sum + Number(c.amount), 0);
+  const pendingCents = myContributions.filter(c => c.status === 'pending').map(c => Number(c.amount));
+  const totalPending = sumCentsNumeric(pendingCents) / 100;
 
-  const totalOverdue = myContributions
-    .filter((c) => c.status === 'overdue')
-    .reduce((sum, c) => sum + Number(c.amount), 0);
+  const overdueCents = myContributions.filter(c => c.status === 'overdue').map(c => Number(c.amount));
+  const totalOverdue = sumCentsNumeric(overdueCents) / 100;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -125,7 +125,7 @@ export default function Contributions() {
                 <CheckCircle className="h-5 w-5 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600">EUR {totalPaid.toFixed(2)}</div>
+                <div className="text-3xl font-bold text-green-600">{selectedGroup?.currency || 'EUR'} {totalPaid.toFixed(2)}</div>
                 <p className="text-xs text-muted-foreground mt-1">Successfully contributed</p>
               </CardContent>
             </Card>
@@ -136,7 +136,7 @@ export default function Contributions() {
                 <DollarSign className="h-5 w-5 text-orange-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-orange-600">EUR {totalPending.toFixed(2)}</div>
+                <div className="text-3xl font-bold text-orange-600">{selectedGroup?.currency || 'EUR'} {totalPending.toFixed(2)}</div>
                 <p className="text-xs text-muted-foreground mt-1">Awaiting payment</p>
               </CardContent>
             </Card>
@@ -147,7 +147,7 @@ export default function Contributions() {
                 <AlertCircle className="h-5 w-5 text-red-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-red-600">EUR {totalOverdue.toFixed(2)}</div>
+                <div className="text-3xl font-bold text-red-600">{selectedGroup?.currency || 'EUR'} {totalOverdue.toFixed(2)}</div>
                 <p className="text-xs text-muted-foreground mt-1">Requires attention</p>
               </CardContent>
             </Card>
@@ -186,33 +186,30 @@ export default function Contributions() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {myContributions.map((contribution) => {
-                      const isPrincipalId = contribution.contributorName.length > 20 && !contribution.contributorName.includes(' ');
-                      return (
-                        <TableRow key={contribution.id}>
-                          <TableCell className="font-semibold">EUR {Number(contribution.amount).toFixed(2)}</TableCell>
-                          <TableCell className={isPrincipalId ? 'text-muted-foreground text-xs font-mono' : ''}>
-                            {isPrincipalId ? `${contribution.contributorName.slice(0, 15)}...` : contribution.contributorName}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(contribution.status)}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {contribution.datePaid 
-                              ? new Date(Number(contribution.datePaid / BigInt(1_000_000))).toLocaleDateString()
-                              : '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteContribution(contribution.id)}
-                              className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {myContributions.map((contribution) => (
+                      <TableRow key={contribution.id}>
+                        <TableCell className="font-medium">
+                          {selectedGroup?.currency || 'EUR'} {centsToUnits(contribution.amount).toFixed(2)}
+                        </TableCell>
+                        <TableCell>{contribution.contributorName}</TableCell>
+                        <TableCell>{getStatusBadge(contribution.status)}</TableCell>
+                        <TableCell>
+                          {contribution.datePaid
+                            ? new Date(Number(contribution.datePaid / BigInt(1_000_000))).toLocaleDateString()
+                            : '-'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteContribution(contribution.id)}
+                            className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               )}
@@ -221,42 +218,17 @@ export default function Contributions() {
         </>
       )}
 
-      {!selectedGroupId && myGroups.length > 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">Select a group</h3>
-            <p className="text-muted-foreground">Choose a group from the dropdown to view your contributions</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {myGroups.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <DollarSign className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">No groups joined</h3>
-            <p className="text-muted-foreground">Join a group to start tracking contributions</p>
-          </CardContent>
-        </Card>
-      )}
-
-      <AlertDialog open={!!deleteConfirmation} onOpenChange={(open) => !open && setDeleteConfirmation(null)}>
+      <AlertDialog open={!!deleteConfirmation} onOpenChange={() => setDeleteConfirmation(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this contribution? This action cannot be undone.
+              This action cannot be undone. This will permanently delete this contribution.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

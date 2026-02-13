@@ -1,25 +1,26 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
-  "architectural_notes": [],
-  "known_issues": [
-    "Production deployment failed with a deployment error (Version 30 publish attempt)"
+  "summary": "Fix currency formatting/scaling regression: dashboard displayed amounts with extra two zeros; ensure calculations use raw stored values and revert Version 30 currency-formatting changes.",
+  "architectural_notes": [
+    "Stored backend amounts are consistent/correct; issue is dashboard display/formatting only (extra two zeros were shown)."
   ],
-  "isFixRequest": false,
-  "imageRequirements": "## Edit Images\n- Increase contrast/clarity of the logo mark (platform-logo-transparent.dim_200x200.png > platform-logo-high-contrast.dim_200x200.png)",
+  "known_issues": [
+    "Dashboard currency formatting regression: amounts displayed with extra two zeros (cent-unit/scaling issue), potentially impacting perceived transaction values."
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-update-the-top-left-header-logo-in-frontend-src-components-header-tsx-to-be-more-visible-across-the-entire-app-by-a-increasing-its-rendered-size-on-mobile-and-desktop-and-b-improving-contrast-against-both-light-and-dark-backgrounds-e-g-adding-a-subtle-background-badge-border-ring-and-or-shadow-around-the-logo-image",
-      "title": "Update the top-left header logo in `frontend/src/components/Header.tsx` to be more visible across the entire app by (a) increasing its rendered size on mobile and desktop and (b) improving contrast against both light and dark backgrounds (e.g., adding a subtle background/badge, border/ring, and/or shadow around the logo image).",
+      "id": "feature-remove-any-frontend-money-display-logic-that-heuristically-rescales-stored-values-e-g-dividing-multiplying-by-100-based-on-magnitude-and-ensure-all-monetary-amounts-are-displayed-strictly-by-converting-backend-stored-cents-to-units-exactly-once-using-the-centralized-money-utilities",
+      "title": "Remove any frontend money display logic that heuristically rescales stored values (e.g., dividing/multiplying by 100 based on magnitude) and ensure all monetary amounts are displayed strictly by converting backend-stored cents to units exactly once using the centralized money utilities.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-if-needed-to-achieve-higher-contrast-create-and-use-a-higher-contrast-variant-of-the-existing-generated-logo-asset-referenced-by-the-header-assets-generated-platform-logo-transparent-dim-200x200-png-and-update-the-header-to-use-the-new-asset-path-consistently",
-      "title": "If needed to achieve higher contrast, create and use a higher-contrast variant of the existing generated logo asset referenced by the header (`/assets/generated/platform-logo-transparent.dim_200x200.png`) and update the header to use the new asset path consistently.",
+      "id": "feature-audit-and-fix-all-dashboard-related-pages-components-so-that-amounts-and-totals-including-group-cards-group-dashboards-returns-payouts-and-summary-tiles-use-consistent-formatting-and-correct-arithmetic-sums-should-be-computed-in-cents-integer-and-converted-for-display-at-the-final-step-with-no-double-conversion-or-mixed-unit-math",
+      "title": "Audit and fix all dashboard-related pages/components so that amounts and totals (including group cards, group dashboards, returns, payouts, and summary tiles) use consistent formatting and correct arithmetic: sums should be computed in cents (integer) and converted for display at the final step, with no double-conversion or mixed unit math.",
       "reqIds": [
         "REQ-2"
       ],
@@ -29,12 +30,26 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Make the app header (top-left) logo more visible by increasing size and contrast across the entire app",
+      "summary": "Revert Version 30 currency formatting/scaling changes so dashboard displays amounts exactly as entered (no added/removed zeros).",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Ensure all calculations use raw stored values with no currency scaling; verify dashboard totals/addition are correct.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Ensure backend data contracts for monetary values used by dashboards are consistent (all monetary amounts returned to the frontend are in cents as integers) and do not apply any scaling or formatting before returning values; adjust backend calculations if any endpoint currently returns unit values or scaled values.",
+      "reqIds": [
+        "REQ-3"
+      ],
       "status": "pending"
     }
   ],
-  "projectName": "Increase header logo visibility (larger + higher contrast) across the app",
+  "projectName": "Revert currency scaling regression so dashboards display correct amounts and calculations use raw stored values",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

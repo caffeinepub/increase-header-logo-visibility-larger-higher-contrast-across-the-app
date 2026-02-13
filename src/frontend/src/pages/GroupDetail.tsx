@@ -37,8 +37,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import type { ContributionWithProfile, Expense, Revenue } from '../backend';
+import type { ContributionWithProfile, Expense, Revenue, ExternalBlob } from '../backend';
 import { centsToUnits } from '../lib/money';
+import { sumCentsNumeric } from '../lib/moneyMath';
 
 interface GroupDetailProps {
   groupId: string;
@@ -199,7 +200,7 @@ export default function GroupDetail({ groupId, onBack, onNavigateToGroupDashboar
   const [showAddMilestone, setShowAddMilestone] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [showAddRevenue, setShowAddRevenue] = useState(false);
-  const [selectedReceipt, setSelectedReceipt] = useState<{ image: any; description: string } | null>(null);
+  const [selectedReceipt, setSelectedReceipt] = useState<{ receiptImage: ExternalBlob; expenseDescription: string } | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     type: 'contribution' | 'expense';
     id: string;
@@ -213,11 +214,19 @@ export default function GroupDetail({ groupId, onBack, onNavigateToGroupDashboar
 
   const currency = group?.currency || 'EUR';
   
-  // Calculate totals using cents conversion
-  const totalContributions = contributions?.reduce((sum, c) => sum + centsToUnits(c.amount), 0) || 0;
-  const paidContributions = contributions?.filter((c) => c.status === 'paid').reduce((sum, c) => sum + centsToUnits(c.amount), 0) || 0;
-  const totalExpenses = expenses?.reduce((sum, e) => sum + centsToUnits(e.amount), 0) || 0;
-  const totalRevenue = revenues?.reduce((sum, r) => sum + centsToUnits(r.amount), 0) || 0;
+  // Calculate totals in cents first, then convert for display
+  const totalContributionsCents = contributions?.map(c => Number(c.amount)) || [];
+  const totalContributions = sumCentsNumeric(totalContributionsCents) / 100;
+  
+  const paidContributionsCents = contributions?.filter(c => c.status === 'paid').map(c => Number(c.amount)) || [];
+  const paidContributions = sumCentsNumeric(paidContributionsCents) / 100;
+  
+  const totalExpensesCents = expenses?.map(e => Number(e.amount)) || [];
+  const totalExpenses = sumCentsNumeric(totalExpensesCents) / 100;
+  
+  const totalRevenueCents = revenues?.map(r => Number(r.amount)) || [];
+  const totalRevenue = sumCentsNumeric(totalRevenueCents) / 100;
+  
   const completedMilestones = milestones?.filter((m) => m.status === 'completed').length || 0;
 
   const handleJoinGroup = async () => {
@@ -234,8 +243,8 @@ export default function GroupDetail({ groupId, onBack, onNavigateToGroupDashboar
   const handleViewReceipt = (expense: Expense) => {
     if (expense.receiptImage) {
       setSelectedReceipt({
-        image: expense.receiptImage,
-        description: expense.description,
+        receiptImage: expense.receiptImage,
+        expenseDescription: expense.description,
       });
     }
   };
@@ -473,19 +482,21 @@ export default function GroupDetail({ groupId, onBack, onNavigateToGroupDashboar
                   <CardTitle>Group Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {Number(group.targetAmount) > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Target Amount:</span>
-                      <span className="font-medium">{currency} {centsToUnits(group.targetAmount).toFixed(2)}</span>
-                    </div>
-                  )}
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Contribution Amount:</span>
+                    <span className="text-muted-foreground">Category:</span>
+                    <span className="font-medium">{group.category}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Contribution Cycle:</span>
+                    <span className="font-medium">{group.contributionCycle}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Monthly Contribution:</span>
                     <span className="font-medium">{currency} {centsToUnits(group.monthlyContributionAmount).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Cycle:</span>
-                    <span className="font-medium capitalize">{group.contributionCycle}</span>
+                    <span className="text-muted-foreground">Target Amount:</span>
+                    <span className="font-medium">{currency} {centsToUnits(group.targetAmount).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Start Date:</span>
@@ -504,23 +515,31 @@ export default function GroupDetail({ groupId, onBack, onNavigateToGroupDashboar
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Recent Activity</CardTitle>
+                  <CardTitle>Financial Summary</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  {activities && activities.length > 0 ? (
-                    <div className="space-y-3">
-                      {activities.slice(0, 5).map((activity) => (
-                        <div key={activity.id} className="text-sm">
-                          <p className="font-medium">{activity.details}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(Number(activity.timestamp / BigInt(1_000_000))).toLocaleString()}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No recent activity</p>
-                  )}
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Contributions:</span>
+                    <span className="font-medium text-green-600">{currency} {totalContributions.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Paid Contributions:</span>
+                    <span className="font-medium text-green-600">{currency} {paidContributions.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Expenses:</span>
+                    <span className="font-medium text-orange-600">{currency} {totalExpenses.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Revenue:</span>
+                    <span className="font-medium text-emerald-600">{currency} {totalRevenue.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between pt-3 border-t">
+                    <span className="text-muted-foreground font-semibold">Net Profit:</span>
+                    <span className={`font-bold ${netProfitColor}`}>
+                      {netProfit >= 0 ? '+' : ''}{currency} {netProfitFormatted}
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -530,23 +549,24 @@ export default function GroupDetail({ groupId, onBack, onNavigateToGroupDashboar
             <Card>
               <CardHeader>
                 <CardTitle>Group Members ({group.members.length + 1})</CardTitle>
-                <CardDescription>All members of this venture group</CardDescription>
+                <CardDescription>All members participating in this venture</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {/* Admin */}
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center justify-between p-3 border rounded-lg bg-primary/5">
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarFallback className="bg-primary text-primary-foreground">A</AvatarFallback>
+                        <AvatarFallback>A</AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="font-medium">Admin</p>
-                        <p className="text-xs text-muted-foreground">{group.admin.toString().slice(0, 10)}...</p>
+                        <p className="text-sm text-muted-foreground">Group Administrator</p>
                       </div>
                     </div>
                     <Badge>Admin</Badge>
                   </div>
+
                   {/* Members */}
                   {group.members.map((member, index) => (
                     <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
@@ -555,13 +575,13 @@ export default function GroupDetail({ groupId, onBack, onNavigateToGroupDashboar
                           <AvatarFallback>M</AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium">Member</p>
-                          <p className="text-xs text-muted-foreground">{member.principal.toString().slice(0, 10)}...</p>
+                          <p className="font-medium">Member {index + 1}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Joined {new Date(Number(member.joinedDate / BigInt(1_000_000))).toLocaleDateString()}
+                          </p>
                         </div>
                       </div>
-                      <span className="text-xs text-muted-foreground">
-                        Joined: {new Date(Number(member.joinedDate / BigInt(1_000_000))).toLocaleDateString()}
-                      </span>
+                      <Badge variant="outline">Member</Badge>
                     </div>
                   ))}
                 </div>
@@ -577,32 +597,31 @@ export default function GroupDetail({ groupId, onBack, onNavigateToGroupDashboar
                     <CardTitle>Contributions</CardTitle>
                     <CardDescription>Track all member contributions</CardDescription>
                   </div>
-                  <Button onClick={() => setShowAddContribution(true)} size="sm" className="gap-2">
+                  <Button onClick={() => setShowAddContribution(true)} className="gap-2">
                     <Plus className="h-4 w-4" />
                     Add Contribution
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                {contributions && contributions.length > 0 ? (
-                  <div className="space-y-3">
-                    {contributions.map((contribution) => {
-                      const canDelete = contribution.member.toString() === userPrincipal;
-                      return (
-                        <ContributionItem 
-                          key={contribution.id} 
-                          contribution={contribution}
-                          currency={currency}
-                          canDelete={canDelete}
-                          onDelete={() => handleDeleteContribution(contribution.id)}
-                        />
-                      );
-                    })}
+                {!contributions || contributions.length === 0 ? (
+                  <div className="text-center py-12">
+                    <DollarSign className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold mb-2">No contributions yet</h3>
+                    <p className="text-muted-foreground mb-4">Start tracking member contributions</p>
+                    <Button onClick={() => setShowAddContribution(true)}>Add First Contribution</Button>
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <DollarSign className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">No contributions recorded yet</p>
+                  <div className="space-y-3">
+                    {contributions.map((contribution) => (
+                      <ContributionItem
+                        key={contribution.id}
+                        contribution={contribution}
+                        currency={currency}
+                        canDelete={contribution.member.toString() === userPrincipal}
+                        onDelete={() => handleDeleteContribution(contribution.id)}
+                      />
+                    ))}
                   </div>
                 )}
               </CardContent>
@@ -615,42 +634,34 @@ export default function GroupDetail({ groupId, onBack, onNavigateToGroupDashboar
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle>Expenses</CardTitle>
-                    <CardDescription>Track group spending and expenses</CardDescription>
+                    <CardDescription>Track all group expenses</CardDescription>
                   </div>
-                  <Button onClick={() => setShowAddExpense(true)} size="sm" className="gap-2">
+                  <Button onClick={() => setShowAddExpense(true)} className="gap-2">
                     <Plus className="h-4 w-4" />
                     Add Expense
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                {expenses && expenses.length > 0 ? (
-                  <div className="space-y-3">
-                    {expenses.map((expense) => {
-                      const canDelete = expense.addedBy.toString() === userPrincipal || isAdmin;
-                      return (
-                        <ExpenseItem 
-                          key={expense.id} 
-                          expense={expense}
-                          currency={currency}
-                          onViewReceipt={() => handleViewReceipt(expense)}
-                          canDelete={canDelete}
-                          onDelete={() => handleDeleteExpense(expense.id)}
-                        />
-                      );
-                    })}
+                {!expenses || expenses.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Receipt className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold mb-2">No expenses yet</h3>
+                    <p className="text-muted-foreground mb-4">Start tracking group expenses</p>
+                    <Button onClick={() => setShowAddExpense(true)}>Add First Expense</Button>
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <Receipt className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">No expenses recorded yet</p>
-                    <Button 
-                      onClick={() => setShowAddExpense(true)} 
-                      variant="outline" 
-                      className="mt-4"
-                    >
-                      Add First Expense
-                    </Button>
+                  <div className="space-y-3">
+                    {expenses.map((expense) => (
+                      <ExpenseItem
+                        key={expense.id}
+                        expense={expense}
+                        currency={currency}
+                        onViewReceipt={() => handleViewReceipt(expense)}
+                        canDelete={expense.addedBy.toString() === userPrincipal || isAdmin}
+                        onDelete={() => handleDeleteExpense(expense.id)}
+                      />
+                    ))}
                   </div>
                 )}
               </CardContent>
@@ -659,55 +670,15 @@ export default function GroupDetail({ groupId, onBack, onNavigateToGroupDashboar
 
           <TabsContent value="revenue">
             <div className="space-y-6">
-              {/* Revenue & Profit Summary Card */}
-              <Card className="border-emerald-200 bg-emerald-50/50">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <img src="/assets/generated/revenue-icon-transparent.dim_64x64.png" alt="Revenue" className="h-8 w-8" />
-                    <CardTitle>Revenue & Profit Summary</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-3 gap-6">
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Total Revenue</p>
-                      <p className="text-3xl font-bold text-emerald-600">
-                        {currency} {totalRevenue.toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Total Expenses</p>
-                      <p className="text-3xl font-bold text-orange-600">
-                        {currency} {totalExpenses.toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Net Profit/Loss</p>
-                      <div className="flex items-center gap-2">
-                        <p className={`text-3xl font-bold ${netProfitColor}`}>
-                          {netProfit >= 0 ? '+' : ''}{currency} {netProfitFormatted}
-                        </p>
-                        {netProfit >= 0 ? (
-                          <TrendingUp className="h-6 w-6 text-green-600" />
-                        ) : (
-                          <TrendingDown className="h-6 w-6 text-red-600" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Revenue List */}
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle>Revenue Entries</CardTitle>
-                      <CardDescription>Income from agricultural activities</CardDescription>
+                      <CardTitle>Revenue</CardTitle>
+                      <CardDescription>Track income generated by the venture</CardDescription>
                     </div>
                     {isAdmin && (
-                      <Button onClick={() => setShowAddRevenue(true)} size="sm" className="gap-2">
+                      <Button onClick={() => setShowAddRevenue(true)} className="gap-2">
                         <Plus className="h-4 w-4" />
                         Add Revenue
                       </Button>
@@ -715,31 +686,49 @@ export default function GroupDetail({ groupId, onBack, onNavigateToGroupDashboar
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {revenues && revenues.length > 0 ? (
-                    <div className="space-y-3">
-                      {revenues.map((revenue) => (
-                        <RevenueItem 
-                          key={revenue.id} 
-                          revenue={revenue}
-                          currency={currency}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
+                  {!revenues || revenues.length === 0 ? (
+                    <div className="text-center py-12">
                       <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                      <p className="text-muted-foreground">No revenue recorded yet</p>
+                      <h3 className="text-lg font-semibold mb-2">No revenue yet</h3>
+                      <p className="text-muted-foreground mb-4">Start tracking venture income</p>
                       {isAdmin && (
-                        <Button 
-                          onClick={() => setShowAddRevenue(true)} 
-                          variant="outline" 
-                          className="mt-4"
-                        >
-                          Add First Revenue
-                        </Button>
+                        <Button onClick={() => setShowAddRevenue(true)}>Add First Revenue</Button>
                       )}
                     </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {revenues.map((revenue) => (
+                        <RevenueItem key={revenue.id} revenue={revenue} currency={currency} />
+                      ))}
+                    </div>
                   )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader>
+                  <CardTitle>Profit & Loss Summary</CardTitle>
+                  <CardDescription>Overall financial performance</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Total Revenue:</span>
+                      <span className="text-2xl font-bold text-emerald-600">{currency} {totalRevenue.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Total Expenses:</span>
+                      <span className="text-2xl font-bold text-orange-600">{currency} {totalExpenses.toFixed(2)}</span>
+                    </div>
+                    <div className="border-t pt-4">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold">Net Profit/Loss:</span>
+                        <span className={`text-3xl font-bold ${netProfitColor}`}>
+                          {netProfit >= 0 ? '+' : ''}{currency} {netProfitFormatted}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -755,10 +744,10 @@ export default function GroupDetail({ groupId, onBack, onNavigateToGroupDashboar
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle>Milestones</CardTitle>
-                    <CardDescription>Project milestones and progress</CardDescription>
+                    <CardDescription>Track project progress and achievements</CardDescription>
                   </div>
                   {isAdmin && (
-                    <Button onClick={() => setShowAddMilestone(true)} size="sm" className="gap-2">
+                    <Button onClick={() => setShowAddMilestone(true)} className="gap-2">
                       <Plus className="h-4 w-4" />
                       Add Milestone
                     </Button>
@@ -766,34 +755,33 @@ export default function GroupDetail({ groupId, onBack, onNavigateToGroupDashboar
                 </div>
               </CardHeader>
               <CardContent>
-                {milestones && milestones.length > 0 ? (
-                  <div className="space-y-4">
+                {!milestones || milestones.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Target className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold mb-2">No milestones yet</h3>
+                    <p className="text-muted-foreground mb-4">Create milestones to track progress</p>
+                    {isAdmin && (
+                      <Button onClick={() => setShowAddMilestone(true)}>Add First Milestone</Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
                     {milestones.map((milestone) => (
                       <div key={milestone.id} className="p-4 border rounded-lg">
                         <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-semibold">{milestone.name}</h3>
+                          <div>
+                            <h4 className="font-semibold">{milestone.name}</h4>
+                            <p className="text-sm text-muted-foreground mt-1">{milestone.description}</p>
+                          </div>
                           <Badge variant={milestone.status === 'completed' ? 'default' : 'secondary'}>
                             {milestone.status}
                           </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2">{milestone.description}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-sm text-muted-foreground">
                           Target: {new Date(Number(milestone.targetDate / BigInt(1_000_000))).toLocaleDateString()}
                         </p>
-                        {milestone.image && (
-                          <img
-                            src={milestone.image.getDirectURL()}
-                            alt={milestone.name}
-                            className="mt-3 rounded-lg max-h-48 object-cover"
-                          />
-                        )}
                       </div>
                     ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Target className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">No milestones created yet</p>
                   </div>
                 )}
               </CardContent>
@@ -804,27 +792,25 @@ export default function GroupDetail({ groupId, onBack, onNavigateToGroupDashboar
             <Card>
               <CardHeader>
                 <CardTitle>Activity Feed</CardTitle>
-                <CardDescription>Recent group activities</CardDescription>
+                <CardDescription>Recent group activities and updates</CardDescription>
               </CardHeader>
               <CardContent>
-                {activities && activities.length > 0 ? (
-                  <div className="space-y-4">
-                    {activities.map((activity) => (
-                      <div key={activity.id} className="flex gap-3 p-3 border rounded-lg">
-                        <Activity className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div className="flex-1">
-                          <p className="font-medium">{activity.details}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(Number(activity.timestamp / BigInt(1_000_000))).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                {!activities || activities.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Activity className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold mb-2">No activity yet</h3>
+                    <p className="text-muted-foreground">Group activities will appear here</p>
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <Activity className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">No activity recorded yet</p>
+                  <div className="space-y-3">
+                    {activities.map((activity) => (
+                      <div key={activity.id} className="p-3 border rounded-lg">
+                        <p className="text-sm">{activity.details}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(Number(activity.timestamp / BigInt(1_000_000))).toLocaleString()}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
@@ -833,72 +819,46 @@ export default function GroupDetail({ groupId, onBack, onNavigateToGroupDashboar
         </Tabs>
       )}
 
-      {!isMember && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">Join this group</h3>
-            <p className="text-muted-foreground mb-4">Become a member to view group details and contribute</p>
-            <Button onClick={handleJoinGroup} disabled={joinGroup.isPending}>
-              {joinGroup.isPending ? 'Joining...' : 'Join Group'}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
+      {/* Dialogs */}
       <AddContributionDialog
         open={showAddContribution}
         onOpenChange={setShowAddContribution}
         groupId={groupId}
       />
-      
       <AddMilestoneDialog
         open={showAddMilestone}
         onOpenChange={setShowAddMilestone}
         groupId={groupId}
       />
-      
       <AddExpenseDialog
         open={showAddExpense}
         onOpenChange={setShowAddExpense}
         groupId={groupId}
       />
-      
-      {isAdmin && (
-        <AddRevenueDialog
-          open={showAddRevenue}
-          onOpenChange={setShowAddRevenue}
-          groupId={groupId}
-        />
-      )}
-
+      <AddRevenueDialog
+        open={showAddRevenue}
+        onOpenChange={setShowAddRevenue}
+        groupId={groupId}
+      />
       {selectedReceipt && (
         <ReceiptModal
           open={!!selectedReceipt}
-          onOpenChange={(open) => !open && setSelectedReceipt(null)}
-          receiptImage={selectedReceipt.image}
-          expenseDescription={selectedReceipt.description}
+          onOpenChange={() => setSelectedReceipt(null)}
+          receiptImage={selectedReceipt.receiptImage}
+          expenseDescription={selectedReceipt.expenseDescription}
         />
       )}
-
-      <AlertDialog open={!!deleteConfirmation} onOpenChange={(open) => !open && setDeleteConfirmation(null)}>
+      <AlertDialog open={!!deleteConfirmation} onOpenChange={() => setDeleteConfirmation(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              {deleteConfirmation?.type === 'contribution' 
-                ? 'Are you sure you want to delete this contribution? This action cannot be undone.'
-                : 'Are you sure you want to delete this expense? This action cannot be undone.'}
+              This action cannot be undone. This will permanently delete this {deleteConfirmation?.type}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

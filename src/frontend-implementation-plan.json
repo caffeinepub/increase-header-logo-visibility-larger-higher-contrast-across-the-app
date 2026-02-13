@@ -1,47 +1,87 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Increase header logo visibility across the app",
+  "title": "Revert currency scaling regression and enforce cents-only calculations across dashboards",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Make the header top-left logo larger on mobile/desktop and improve its contrast on both light and dark header backgrounds without breaking navigation.",
+      "summary": "Remove heuristic money rescaling and ensure all money display converts backend cents to units exactly once via centralized utilities.",
       "acceptanceCriteria": [
-        "The logo in the header top-left is visibly larger than the current `h-8 w-8` (mobile) / `sm:h-10 sm:w-10` (desktop) sizing.",
-        "The logo remains clearly visible (high contrast) on both light mode and dark mode header backgrounds.",
-        "The change is applied everywhere the header appears (all pages routed via `App.tsx`).",
-        "No other navigation/header functionality is broken (logo click still navigates to the landing page)."
+        "No UI path divides/multiplies amounts by 100 based on heuristics (e.g., removes/avoids use of normalizeExpenseAmount-style logic for display).",
+        "All displayed monetary values are derived from backend values via a single, consistent conversion (e.g., centsToUnits / formatMoneyFromCents).",
+        "Regression test: an amount entered as 100.00 displays as 100.00 (not 10000.00 or 1.00) everywhere it appears in dashboards and lists."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/Header.tsx",
-          "operation": "modify",
-          "description": "Increase the rendered logo size for mobile and desktop, and add a subtle high-contrast treatment around the logo (e.g., badge/background + ring/border + shadow and/or image drop-shadow) using Tailwind classes so it stays readable in both light and dark modes. Keep the existing click handler to navigate to the landing page and avoid modifying any `frontend/src/components/ui` primitives."
+          "path": "frontend/src/lib/normalizeExpenseAmount.ts",
+          "operation": "delete",
+          "description": "Remove the heuristic normalization/formatting utilities that rescale values based on magnitude/divisibility to eliminate display-time scaling."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/lib/money.ts",
           "operation": "modify",
-          "description": "Verify the header usage remains unchanged and continues to be rendered for all routed pages (ensuring the logo visibility change applies app-wide via `App.tsx` composition). No routing/layout changes beyond what’s necessary for verification."
+          "description": "Ensure centralized money utilities are the only conversion/formatting path for backend-stored cents (e.g., keep/standardize usage of formatMoneyFromCents and centsToUnits) and add any small helper(s) needed to avoid ad-hoc conversions elsewhere."
+        },
+        {
+          "path": "frontend/src/pages/Dashboard.tsx",
+          "operation": "modify",
+          "description": "Fix all monetary displays to use centralized money utilities exactly once (e.g., My Returns card values and the 'Contribution' line in recent groups should display via formatMoneyFromCents/centsToUnits using the group currency instead of hardcoded or raw Number(...) values)."
+        },
+        {
+          "path": "frontend/src/pages/GroupDashboard.tsx",
+          "operation": "modify",
+          "description": "Replace any remaining manual string concatenation/toFixed formatting for dashboard currency values with centralized money utilities to guarantee consistent two-decimal formatting and prevent accidental double-conversion."
+        },
+        {
+          "path": "frontend/src/pages/GroupDetail.tsx",
+          "operation": "modify",
+          "description": "Remove any lingering heuristic scaling usage in group detail lists (contributions/expenses/revenues) and ensure each displayed amount is formatted from backend cents using centralized money utilities."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Add a higher-contrast generated logo asset and switch the header to reference it consistently if needed for readability at the new size.",
+      "summary": "Audit dashboard pages/components so totals are computed in integer cents and only converted for display at the final step with consistent currency formatting.",
       "acceptanceCriteria": [
-        "A higher-contrast logo asset exists under `frontend/public/assets/generated/` and is referenced by `Header.tsx` (no backend routing for the image).",
-        "The new logo asset retains transparent edges cleanly (no unintended background artifacts) and appears sharper/more readable at the new size."
+        "All dashboard totals (e.g., total raised/spent/revenue/net profit/remaining balance, contribution totals, payout totals, returns totals) match the underlying stored values when verified by manual calculation from the same source data.",
+        "No component mixes cents and units in the same calculation (e.g., does not add a cents value to a units value).",
+        "Currency display is consistently rendered with the group currency code and exactly two decimals across dashboard views."
       ],
       "file_operations": [
         {
-          "path": "frontend/public/assets/generated/platform-logo-high-contrast.dim_200x200.png",
+          "path": "frontend/src/lib/moneyMath.ts",
           "operation": "create",
-          "description": "Create a higher-contrast variant of the existing generated logo mark (as specified in image edits) with clean transparency and improved clarity at larger sizes. This must be a static frontend asset under `frontend/public/assets/generated/` (no backend storage/routing)."
+          "description": "Add small, shared helpers for cents-safe arithmetic in the frontend (e.g., summing arrays of bigint cents and computing derived totals in cents) so dashboard components avoid mixed-unit math."
         },
         {
-          "path": "frontend/src/components/Header.tsx",
+          "path": "frontend/src/pages/Dashboard.tsx",
           "operation": "modify",
-          "description": "Update the logo image `src` to reference the new asset path `frontend/public/assets/generated/platform-logo-high-contrast.dim_200x200.png` consistently for the header logo, ensuring it remains readable against both light and dark backgrounds while preserving existing navigation behavior."
+          "description": "Update dashboard-level calculations for returns to operate on bigint cents (no intermediate unit conversions), then format for display at the end using centralized money utilities with the group currency."
+        },
+        {
+          "path": "frontend/src/pages/GroupDetail.tsx",
+          "operation": "modify",
+          "description": "Refactor group overview totals (total contributions/paid contributions/expenses/revenue/net profit) to sum in bigint cents first (integer math) and convert/format only for final rendering; ensure no centsToUnits calls occur inside reduce() loops."
+        },
+        {
+          "path": "frontend/src/components/PayoutCalculator.tsx",
+          "operation": "modify",
+          "description": "Compute payout summary totals using integer cents (bigint) and format at render-time with centralized money utilities; ensure no payout total uses unit floats for summation."
+        },
+        {
+          "path": "frontend/src/components/PlannedPaymentsSection.tsx",
+          "operation": "modify",
+          "description": "Ensure each planned payment amount display is formatted consistently with centralized money utilities and verify any derived values remain cents-based until the final display step."
+        },
+        {
+          "path": "frontend/src/components/MyPlannedPayments.tsx",
+          "operation": "modify",
+          "description": "Ensure all planned payment amount displays use centralized money formatting and that any grouping/summary logic remains cents-based (no mixed unit arithmetic)."
+        },
+        {
+          "path": "frontend/src/pages/Contributions.tsx",
+          "operation": "modify",
+          "description": "Audit contributions lists and any totals/summary UI to ensure sums are computed in cents (bigint) and displayed via centralized money utilities with exactly two decimals and the correct currency code."
         }
       ]
     }

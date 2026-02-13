@@ -125,15 +125,17 @@ export default function GroupDashboard({ groupId, onBack, onViewDetails }: Group
             <div className="text-3xl font-bold">
               {financialSummary.currency} {totalSpent.toFixed(2)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Operating expenses</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {fundsSpentPercentage}% of funds used
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
-            <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-950 flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-blue-600" />
+            <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-emerald-600" />
             </div>
           </CardHeader>
           <CardContent>
@@ -147,54 +149,62 @@ export default function GroupDashboard({ groupId, onBack, onViewDetails }: Group
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Net Profit</CardTitle>
-            <div className="h-10 w-10 rounded-lg bg-purple-100 dark:bg-purple-950 flex items-center justify-center">
-              <Target className="h-5 w-5 text-purple-600" />
+            <div className={`h-10 w-10 rounded-lg ${netProfit >= 0 ? 'bg-green-100 dark:bg-green-950' : 'bg-red-100 dark:bg-red-950'} flex items-center justify-center`}>
+              {netProfit >= 0 ? (
+                <TrendingUp className="h-5 w-5 text-green-600" />
+              ) : (
+                <TrendingDown className="h-5 w-5 text-red-600" />
+              )}
             </div>
           </CardHeader>
           <CardContent>
             <div className={`text-3xl font-bold ${netProfitColor}`}>
-              {netProfit >= 0 ? '+' : ''}
-              {financialSummary.currency} {netProfit.toFixed(2)}
+              {netProfit >= 0 ? '+' : ''}{financialSummary.currency} {netProfit.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Revenue - Expenses</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Progress Section */}
+      {/* Fundraising Progress */}
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle>Fundraising Progress</CardTitle>
-          <CardDescription>
-            {progressPercentage}% of target amount raised
-          </CardDescription>
+          <div className="flex items-center gap-2">
+            <Target className="h-5 w-5 text-primary" />
+            <CardTitle>Fundraising Progress</CardTitle>
+          </div>
+          <CardDescription>Track progress towards your target goal</CardDescription>
         </CardHeader>
         <CardContent>
-          <Progress value={progressPercentage} className="h-3 mb-4" />
-          <div className="flex justify-between text-sm mb-6">
-            <span className="text-muted-foreground">
-              Raised: {financialSummary.currency} {totalRaised.toFixed(2)}
-            </span>
-            <span className="text-muted-foreground">
-              Target: {financialSummary.currency} {targetAmount.toFixed(2)}
-            </span>
-          </div>
-          
-          {totalRaised > 0 && (
-            <div className="pt-4 border-t">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Funds Spent</span>
-                  <span className="font-semibold">{fundsSpentPercentage}%</span>
-                </div>
-                <Progress value={fundsSpentPercentage} className="h-3" />
-                <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                  <span>Spent: {financialSummary.currency} {totalSpent.toFixed(2)}</span>
-                  <span>Remaining: {financialSummary.currency} {remainingBalance.toFixed(2)}</span>
-                </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Current Progress</p>
+                <p className="text-2xl font-bold">{financialSummary.currency} {totalRaised.toFixed(2)}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Target Goal</p>
+                <p className="text-2xl font-bold text-muted-foreground">{financialSummary.currency} {targetAmount.toFixed(2)}</p>
               </div>
             </div>
-          )}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Progress</span>
+                <span className="font-semibold">{progressPercentage}%</span>
+              </div>
+              <Progress value={progressPercentage} className="h-3" />
+            </div>
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Remaining Balance</p>
+                <p className="text-xl font-bold">{financialSummary.currency} {remainingBalance.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Members</p>
+                <p className="text-xl font-bold">{groupInfo.members.length + 1}</p>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -203,129 +213,113 @@ export default function GroupDashboard({ groupId, onBack, onViewDetails }: Group
         <PlannedPaymentsSection groupId={groupId} isAdmin={isAdmin} />
       </div>
 
-      {/* Two Column Layout */}
-      <div className="grid lg:grid-cols-2 gap-8 mb-8">
-        {/* Milestones */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Milestones</CardTitle>
-                <CardDescription>
-                  {completedMilestones} completed, {pendingMilestones} pending
-                </CardDescription>
-              </div>
-              <img src="/assets/generated/milestone-badge-transparent.dim_64x64.png" alt="Milestones" className="h-10 w-10" />
+      {/* Milestones */}
+      <Card className="mb-8">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Milestones</CardTitle>
+              <CardDescription>Track project progress and achievements</CardDescription>
             </div>
-          </CardHeader>
-          <CardContent>
-            {milestones.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">No milestones yet</p>
-            ) : (
-              <div className="space-y-4">
-                {milestones.slice(0, 5).map((milestone) => (
-                  <div key={milestone.id} className="flex items-start gap-3 p-3 border rounded-lg">
+            <Badge variant="outline">
+              {completedMilestones}/{milestones.length} Complete
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {milestones.length === 0 ? (
+            <div className="text-center py-8">
+              <Target className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground">No milestones yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {milestones.slice(0, 5).map((milestone) => (
+                <div key={milestone.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
                     {milestone.status === MilestoneStatus.completed ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                      <CheckCircle2 className="h-5 w-5 text-green-600" />
                     ) : (
-                      <Clock className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                      <Clock className="h-5 w-5 text-orange-600" />
                     )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="font-semibold text-sm">{milestone.name}</h4>
-                        <Badge variant={milestone.status === MilestoneStatus.completed ? 'default' : 'secondary'} className="flex-shrink-0">
-                          {milestone.status}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                        {milestone.description}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Due: {format(new Date(Number(milestone.targetDate) / 1000000), 'MMM dd, yyyy')}
+                    <div>
+                      <p className="font-medium">{milestone.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(Number(milestone.targetDate / BigInt(1_000_000))), 'dd MMM yyyy')}
                       </p>
                     </div>
                   </div>
-                ))}
-                {milestones.length > 5 && (
-                  <Button variant="outline" className="w-full" onClick={onViewDetails}>
-                    View All {milestones.length} Milestones
-                  </Button>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Recent Contributions */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Recent Contributions</CardTitle>
-                <CardDescription>Latest member contributions</CardDescription>
-              </div>
-              <img src="/assets/generated/contribution-icon-transparent.dim_64x64.png" alt="Contributions" className="h-10 w-10" />
+                  <Badge variant={milestone.status === MilestoneStatus.completed ? 'default' : 'secondary'}>
+                    {milestone.status}
+                  </Badge>
+                </div>
+              ))}
             </div>
-          </CardHeader>
-          <CardContent>
-            {recentContributions.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">No contributions yet</p>
-            ) : (
-              <div className="space-y-3">
-                {recentContributions.map((contribution) => (
-                  <div key={contribution.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-sm font-semibold text-primary">
-                          {contribution.contributorName.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">{contribution.contributorName}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {contribution.datePaid ? format(new Date(Number(contribution.datePaid) / 1000000), 'MMM dd, yyyy') : 'Pending'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-green-600">
-                        {groupInfo.currency} {centsToUnits(contribution.amount).toFixed(2)}
-                      </p>
-                      <Badge variant={contribution.status === ContributionStatus.paid ? 'default' : 'secondary'} className="text-xs">
-                        {contribution.status}
-                      </Badge>
-                    </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Recent Contributions */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Recent Contributions</CardTitle>
+          <CardDescription>Latest member contributions to the group</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {recentContributions.length === 0 ? (
+            <div className="text-center py-8">
+              <DollarSign className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground">No contributions yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentContributions.map((contribution) => (
+                <div key={contribution.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium">{contribution.contributorName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {contribution.datePaid && format(new Date(Number(contribution.datePaid / BigInt(1_000_000))), 'dd MMM yyyy')}
+                    </p>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                  <div className="text-right">
+                    <p className="font-bold">{financialSummary.currency} {centsToUnits(contribution.amount).toFixed(2)}</p>
+                    <Badge variant={contribution.status === ContributionStatus.paid ? 'default' : 'secondary'}>
+                      {contribution.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Activity Feed */}
       <Card>
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Latest updates and events in this group</CardDescription>
+          <CardDescription>Latest updates and events in the group</CardDescription>
         </CardHeader>
         <CardContent>
           {activityFeed.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No recent activity</p>
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground">No activity yet</p>
+            </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {activityFeed.slice(0, 10).map((activity) => (
-                <div key={activity.id} className="flex items-start gap-3 pb-3 border-b last:border-0">
+                <div key={activity.id} className="flex items-start gap-3 p-3 border rounded-lg">
                   <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    {activity.activityType === ActivityType.contributionMade && <DollarSign className="h-4 w-4 text-primary" />}
                     {activity.activityType === ActivityType.memberJoined && <Users className="h-4 w-4 text-primary" />}
+                    {activity.activityType === ActivityType.contributionMade && <DollarSign className="h-4 w-4 text-primary" />}
                     {activity.activityType === ActivityType.milestoneUpdated && <Target className="h-4 w-4 text-primary" />}
                     {activity.activityType === ActivityType.expenseAdded && <TrendingDown className="h-4 w-4 text-primary" />}
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1">
                     <p className="text-sm">{activity.details}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {format(new Date(Number(activity.timestamp) / 1000000), 'MMM dd, yyyy HH:mm')}
+                      {format(new Date(Number(activity.timestamp / BigInt(1_000_000))), 'dd MMM yyyy, HH:mm')}
                     </p>
                   </div>
                 </div>

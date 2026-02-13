@@ -2,10 +2,13 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-top-left-header-logo-in-frontend-src-components-header-tsx-to-be-more-visible-across-the-entire-app-by-a-increasing-its-rendered-size-on-mobile-and-desktop-and-b-improving-contrast-against-both-light-and-dark-backgrounds-e-g-adding-a-subtle-background-badge-border-ring-and-or-shadow-around-the-logo-image",
-      "featureTitle": "Update the top-left header logo in `frontend/src/components/Header.tsx` to be more visible across the entire app by (a) increasing its rendered size on mobile and desktop and (b) improving contrast against both light and dark backgrounds (e.g., adding a subtle background/badge, border/ring, and/or shadow around the logo image).",
+      "featureId": "feature-remove-any-frontend-money-display-logic-that-heuristically-rescales-stored-values-e-g-dividing-multiplying-by-100-based-on-magnitude-and-ensure-all-monetary-amounts-are-displayed-strictly-by-converting-backend-stored-cents-to-units-exactly-once-using-the-centralized-money-utilities",
+      "featureTitle": "Remove any frontend money display logic that heuristically rescales stored values (e.g., dividing/multiplying by 100 based on magnitude) and ensure all monetary amounts are displayed strictly by converting backend-stored cents to units exactly once using the centralized money utilities.",
       "files": [
-        "frontend/src/components/Header.tsx"
+        "frontend/src/lib/normalizeExpenseAmount.ts",
+        "frontend/src/pages/Dashboard.tsx",
+        "frontend/src/pages/GroupDashboard.tsx",
+        "frontend/src/pages/GroupDetail.tsx"
       ],
       "components": [
         "authorization@1.0.1",
@@ -23,10 +26,14 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-if-needed-to-achieve-higher-contrast-create-and-use-a-higher-contrast-variant-of-the-existing-generated-logo-asset-referenced-by-the-header-assets-generated-platform-logo-transparent-dim-200x200-png-and-update-the-header-to-use-the-new-asset-path-consistently",
-      "featureTitle": "If needed to achieve higher contrast, create and use a higher-contrast variant of the existing generated logo asset referenced by the header (`/assets/generated/platform-logo-transparent.dim_200x200.png`) and update the header to use the new asset path consistently.",
+      "featureId": "feature-audit-and-fix-all-dashboard-related-pages-components-so-that-amounts-and-totals-including-group-cards-group-dashboards-returns-payouts-and-summary-tiles-use-consistent-formatting-and-correct-arithmetic-sums-should-be-computed-in-cents-integer-and-converted-for-display-at-the-final-step-with-no-double-conversion-or-mixed-unit-math",
+      "featureTitle": "Audit and fix all dashboard-related pages/components so that amounts and totals (including group cards, group dashboards, returns, payouts, and summary tiles) use consistent formatting and correct arithmetic: sums should be computed in cents (integer) and converted for display at the final step, with no double-conversion or mixed unit math.",
       "files": [
-        "frontend/src/components/Header.tsx"
+        "frontend/src/components/PayoutCalculator.tsx",
+        "frontend/src/lib/moneyMath.ts",
+        "frontend/src/pages/Contributions.tsx",
+        "frontend/src/pages/Dashboard.tsx",
+        "frontend/src/pages/GroupDetail.tsx"
       ],
       "components": [
         "authorization@1.0.1",

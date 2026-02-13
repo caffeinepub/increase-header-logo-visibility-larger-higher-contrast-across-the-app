@@ -6,6 +6,7 @@ import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import MyPlannedPayments from '../components/MyPlannedPayments';
+import { centsToUnits } from '../lib/money';
 
 interface DashboardProps {
   onNavigateToGroup: (groupId: string) => void;
@@ -163,7 +164,7 @@ export default function Dashboard({ onNavigateToGroup }: DashboardProps) {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Contribution:</span>
-                      <span className="font-medium">EUR {Number(group.monthlyContributionAmount)}</span>
+                      <span className="font-medium">{group.currency} {centsToUnits(group.monthlyContributionAmount).toFixed(2)}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -205,9 +206,9 @@ function MyReturnsCard({ groupId, groupName, currency }: { groupId: string; grou
     return null;
   }
 
-  const totalContributed = Number(returns.totalContributed);
-  const totalReceived = Number(returns.totalReceived);
-  const netProfit = Number(returns.netProfit);
+  const totalContributed = centsToUnits(returns.totalContributed);
+  const totalReceived = centsToUnits(returns.totalReceived);
+  const netProfit = centsToUnits(returns.netProfit);
   const netProfitColor = netProfit >= 0 ? 'text-green-600' : 'text-red-600';
 
   return (
