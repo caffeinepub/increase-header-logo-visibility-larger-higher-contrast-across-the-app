@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "Fix regression where monetary amounts are mis-scaled in the UI (e.g., €100.00 showing as €1.00) by enforcing a single money model across frontend/shared logic and verifying backend source-of-truth before any data migration.",
+  "architectural_notes": [
+    "Before touching production data, verify the backend source-of-truth for an affected transaction via DB/API/logs/admin raw endpoint to determine whether data or interpretation is wrong.",
+    "Enforce exactly one money model across the app; chosen approach for current state: backend stores euros as decimals, no multiply/divide by 100 anywhere; UI only formats at render time."
+  ],
+  "known_issues": [
+    "Regression introduced around Version 30: UI/shared logic assumes stored euro-decimal amounts are cents and divides by 100, causing values like 100.00 → 1.00."
+  ],
+  "isFixRequest": true,
+  "existing_features": [
+    {
+      "id": "feature-standardize-frontend-money-display-to-convert-backend-amounts-exactly-once-and-eliminate-any-double-scaling-e-g-dividing-by-100-more-than-once-across-all-pages-components-that-render-totals-and-line-item-amounts",
+      "title": "Standardize frontend money display to convert backend amounts exactly once and eliminate any double-scaling (e.g., dividing by 100 more than once) across all pages/components that render totals and line-item amounts.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-temporary-explicit-money-model-compatibility-layer-in-the-frontend-that-can-correctly-interpret-existing-production-records-if-they-were-stored-in-whole-units-e-g-100-meaning-eur-100-00-while-new-records-are-stored-in-cents-without-performing-any-backend-data-migration",
+      "title": "Implement a temporary, explicit money-model compatibility layer in the frontend that can correctly interpret existing production records if they were stored in whole units (e.g., 100 meaning EUR 100.00) while new records are stored in cents, without performing any backend data migration.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-and-update-all-money-input-flows-to-ensure-values-sent-to-the-backend-match-the-chosen-money-model-and-remain-consistent-with-backend-validation-while-preserving-existing-ux-2-decimal-input",
+      "title": "Audit and update all money input flows to ensure values sent to the backend match the chosen money model and remain consistent with backend validation, while preserving existing UX (2 decimal input).",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Fix mis-scaled monetary amounts: verify backend source-of-truth and remove incorrect /100 scaling in UI/shared logic (no data migration until confirmed)",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Add a non-destructive, admin-only backend query endpoint that exposes raw stored monetary amounts (and their record IDs) for a given venture group, so we can verify whether production data is stored as cents or as whole-unit values without changing any state.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Fix mis-scaled monetary amounts across the app (prevent /100 double-scaling; verify backend source-of-truth first)",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

@@ -1,0 +1,137 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Fix mis-scaled monetary amounts in UI with single conversion path + temporary compatibility layer",
+  "requirements": [
+    {
+      "id": "REQ-2",
+      "summary": "Standardize frontend money display so backend amounts are converted exactly once (no double-scaling) across all money-rendering views and totals.",
+      "acceptanceCriteria": [
+        "All monetary amounts shown in the UI (dashboards, group detail, contributions list, payout views, planned payments, etc.) are derived from a single shared conversion path and are not manually divided/multiplied elsewhere.",
+        "Totals are computed in the same unit as the raw backend values and only converted at the final render step (no mixed-unit arithmetic).",
+        "A regression check confirms the scenario in the uploaded screenshot (values like EUR 1.00 / EUR 2.00) displays correctly once the raw backend values are interpreted consistently.",
+        "No user-facing text is changed away from English."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/moneyModel.ts",
+          "operation": "create",
+          "description": "Create a centralized money conversion/rendering API (e.g., normalize-at-boundary + format-at-render) that ensures backend monetary amounts are converted exactly once and prevents component-local /100 scaling."
+        },
+        {
+          "path": "frontend/src/lib/money.ts",
+          "operation": "modify",
+          "description": "Refactor existing formatting helpers to delegate to the new shared conversion path (from frontend/src/lib/moneyModel.ts) so all UI formatting flows through one place."
+        },
+        {
+          "path": "frontend/src/lib/moneyMath.ts",
+          "operation": "modify",
+          "description": "Add/adjust cent-safe arithmetic helpers to work on normalized cents (bigint) without introducing any implicit /100 conversions during summation or percentage calculations."
+        },
+        {
+          "path": "frontend/src/pages/GroupDetail.tsx",
+          "operation": "modify",
+          "description": "Replace any direct numeric division (e.g., sum/100) and scattered centsToUnits calls with the shared money conversion/formatting functions to ensure totals + line items are rendered via a single conversion path."
+        },
+        {
+          "path": "frontend/src/pages/GroupDashboard.tsx",
+          "operation": "modify",
+          "description": "Update money rendering and totals to use the shared money conversion/formatting functions so dashboard values cannot be double-scaled."
+        },
+        {
+          "path": "frontend/src/pages/Contributions.tsx",
+          "operation": "modify",
+          "description": "Ensure contributions totals and line-item amounts render using the shared conversion path; remove any manual /100 conversions or mixed-unit calculations."
+        },
+        {
+          "path": "frontend/src/pages/Dashboard.tsx",
+          "operation": "modify",
+          "description": "Standardize dashboard money display (summaries, planned payments widgets, etc.) to use the shared conversion path and avoid any duplicate scaling."
+        },
+        {
+          "path": "frontend/src/components/PayoutCalculator.tsx",
+          "operation": "modify",
+          "description": "Update payout totals and per-member payout amounts to use the shared conversion/formatting functions and keep all calculations in normalized cents until final render."
+        },
+        {
+          "path": "frontend/src/components/PlannedPaymentsSection.tsx",
+          "operation": "modify",
+          "description": "Update planned payment amount rendering to use the shared conversion/formatting functions and remove any local assumptions about stored units."
+        },
+        {
+          "path": "frontend/src/components/MyPlannedPayments.tsx",
+          "operation": "modify",
+          "description": "Update my planned payments amount rendering to use the shared conversion/formatting functions and ensure consistent scale across cards and badges."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Add a temporary frontend money-model compatibility layer that deterministically normalizes legacy whole-unit records vs cent-stored records at query-consumption boundaries (no backend migration).",
+      "acceptanceCriteria": [
+        "Frontend includes a single normalization function used at query-consumption boundaries (not scattered in UI components) that can handle legacy unit-stored values vs cent-stored values in a deterministic way.",
+        "The normalization layer includes safeguards to prevent double-scaling (e.g., values already in cents are not scaled again).",
+        "Normalization is applied consistently for contributions, expenses, revenues, group progress/financial summary, payouts, and planned payments wherever they are displayed or summed.",
+        "No backend state is altered; this is display/interpretation-only until backend truth is confirmed."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/moneyModel.ts",
+          "operation": "modify",
+          "description": "Implement the money-model compatibility layer (single normalization function + model selection/override per group) with safeguards to prevent double-scaling and a deterministic selection strategy."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Apply money normalization at query-consumption boundaries (React Query hooks) so all fetched monetary fields (contributions/expenses/revenues/payouts/planned payments/group progress/financial summary/dashboard aggregates) are normalized once before reaching UI components."
+        },
+        {
+          "path": "frontend/src/lib/normalizeExpenseAmount.ts",
+          "operation": "modify",
+          "description": "Either remove the placeholder by wiring it to the new shared money-model normalization function or repurpose it as a thin wrapper around the centralized compatibility layer (to avoid scattered, one-off normalization logic)."
+        },
+        {
+          "path": "frontend/src/pages/GroupDetail.tsx",
+          "operation": "modify",
+          "description": "Add an admin-only verification/debug section for money model selection and inspection that uses the authorization component to gate access (Verify the component's usage instructions before implementing.) and allows deterministic per-group model override without changing backend state."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Audit and update all money input flows so submitted values match the chosen money model consistently while preserving 2-decimal UX and validation.",
+      "acceptanceCriteria": [
+        "All dialogs/forms that submit monetary values (e.g., add contribution/expense/revenue/planned payment) submit amounts in the backend-expected unit consistently (and do not rely on component-local scaling).",
+        "User inputs still accept up to 2 decimal places and show clear validation errors for invalid amounts.",
+        "Newly created records render in the UI with the same scale as existing records (no new mismatch introduced)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/lib/moneyModel.ts",
+          "operation": "modify",
+          "description": "Add a single submission-path helper for converting validated UI input into the backend-expected bigint amount according to the currently selected money model (ensuring inputs are never double-scaled and stay consistent with display normalization)."
+        },
+        {
+          "path": "frontend/src/components/AddContributionDialog.tsx",
+          "operation": "modify",
+          "description": "Update submission logic to use the shared money submission helper (rather than any implicit assumptions) while keeping the same 2-decimal input UX and existing validation behavior."
+        },
+        {
+          "path": "frontend/src/components/AddExpenseDialog.tsx",
+          "operation": "modify",
+          "description": "Update submission logic to use the shared money submission helper for amount -> backend value conversion; preserve current 2-decimal input UX and validation errors."
+        },
+        {
+          "path": "frontend/src/components/AddRevenueDialog.tsx",
+          "operation": "modify",
+          "description": "Update submission logic to use the shared money submission helper for amount conversion; keep 2-decimal UX and error handling."
+        },
+        {
+          "path": "frontend/src/components/AddPlannedPaymentDialog.tsx",
+          "operation": "modify",
+          "description": "Update planned payment submission logic to use the shared money submission helper and ensure newly created planned payments display with the same scale as existing records."
+        }
+      ]
+    }
+  ]
+}

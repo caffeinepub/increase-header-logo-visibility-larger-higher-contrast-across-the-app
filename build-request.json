@@ -1,0 +1,114 @@
+{
+  "kind": "build_request",
+  "title": "Fix mis-scaled monetary amounts across the app (prevent /100 double-scaling; verify backend source-of-truth first)",
+  "priority": "high",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Add a non-destructive, admin-only backend query endpoint that exposes raw stored monetary amounts (and their record IDs) for a given venture group, so we can verify whether production data is stored as cents or as whole-unit values without changing any state.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "all values being displayed in the app are now wrong and don't match the previously entered ones",
+          "I expect the amounts to be recovered correctly from backend if no changes were made to it.",
+          "This is almost certainly a FRONTEND + SHARED LOGIC issue, not corrupted backend data."
+        ]
+      },
+      "acceptanceCriteria": [
+        "An authenticated admin can call a query method (no state changes) to retrieve a small sample list of raw Int amounts for contributions, expenses, revenues, payouts, and planned payments for a specified groupId.",
+        "The endpoint returns IDs + raw amount + a record type discriminator so a developer/admin can compare UI vs backend values.",
+        "Non-admin callers are rejected (trap) with an authorization error.",
+        "No existing stored records are modified as part of this verification step."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Standardize frontend money display to convert backend amounts exactly once and eliminate any double-scaling (e.g., dividing by 100 more than once) across all pages/components that render totals and line-item amounts.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "UI (or shared logic) assumed values were cents",
+          "It divided by 100 when rendering",
+          "Result: 100.00 → 1.00 ❌",
+          "Fix regression where monetary amounts are mis-scaled in the UI (e.g., €100.00 showing as €1.00)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "All monetary amounts shown in the UI (dashboards, group detail, contributions list, payout views, planned payments, etc.) are derived from a single shared conversion path and are not manually divided/multiplied elsewhere.",
+        "Totals are computed in the same unit as the raw backend values and only converted at the final render step (no mixed-unit arithmetic).",
+        "A regression check confirms the scenario in the uploaded screenshot (values like EUR 1.00 / EUR 2.00) displays correctly once the raw backend values are interpreted consistently.",
+        "No user-facing text is changed away from English."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Implement a temporary, explicit money-model compatibility layer in the frontend that can correctly interpret existing production records if they were stored in whole units (e.g., 100 meaning EUR 100.00) while new records are stored in cents, without performing any backend data migration.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "The correct strategy (do NOT migrate data yet)",
+          "Before touching production data, we must prove where the truth lives.",
+          "Existing production data will be normalized so values like €72299 correctly display as €722.99 everywhere, with safeguards to prevent double-scaling or regression."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Frontend includes a single normalization function used at query-consumption boundaries (not scattered in UI components) that can handle legacy unit-stored values vs cent-stored values in a deterministic way.",
+        "The normalization layer includes safeguards to prevent double-scaling (e.g., values already in cents are not scaled again).",
+        "Normalization is applied consistently for contributions, expenses, revenues, group progress/financial summary, payouts, and planned payments wherever they are displayed or summed.",
+        "No backend state is altered; this is display/interpretation-only until backend truth is confirmed."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Audit and update all money input flows to ensure values sent to the backend match the chosen money model and remain consistent with backend validation, while preserving existing UX (2 decimal input).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "There were decimals to 2 decimals",
+          "we only need to work on reseting all the values earlier to there correct values"
+        ]
+      },
+      "acceptanceCriteria": [
+        "All dialogs/forms that submit monetary values (e.g., add contribution/expense/revenue/planned payment) submit amounts in the backend-expected unit consistently (and do not rely on component-local scaling).",
+        "User inputs still accept up to 2 decimal places and show clear validation errors for invalid amounts.",
+        "Newly created records render in the UI with the same scale as existing records (no new mismatch introduced)."
+      ]
+    }
+  ],
+  "constraints": [
+    "Backend must remain a single Motoko actor in backend/main.mo; only add migration.mo if an actual state migration is required (this request explicitly avoids migration).",
+    "Do not edit any files under frontend/src/components/ui or any path listed in frontend.immutablePaths.",
+    "Do not introduce third-party auth providers; Internet Identity remains the only auth."
+  ],
+  "nonGoals": [
+    "Do not migrate/overwrite production monetary data as part of this fix.",
+    "Do not change currencies, add multi-currency conversion, or introduce exchange-rate features.",
+    "Do not redesign unrelated UI/UX outside of money display consistency and verification tooling."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
+  }
+}

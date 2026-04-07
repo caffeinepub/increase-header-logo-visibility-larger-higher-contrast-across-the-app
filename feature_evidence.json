@@ -1,0 +1,76 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-standardize-frontend-money-display-to-convert-backend-amounts-exactly-once-and-eliminate-any-double-scaling-e-g-dividing-by-100-more-than-once-across-all-pages-components-that-render-totals-and-line-item-amounts",
+      "featureTitle": "Standardize frontend money display to convert backend amounts exactly once and eliminate any double-scaling (e.g., dividing by 100 more than once) across all pages/components that render totals and line-item amounts.",
+      "files": [
+        "frontend/src/components/MyPlannedPayments.tsx",
+        "frontend/src/components/PlannedPaymentsSection.tsx",
+        "frontend/src/lib/money.ts",
+        "frontend/src/lib/moneyMath.ts",
+        "frontend/src/lib/moneyModel.ts",
+        "frontend/src/pages/Contributions.tsx",
+        "frontend/src/pages/Dashboard.tsx",
+        "frontend/src/pages/GroupDashboard.tsx"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "blob-storage@2.0.3",
+        "invite-links@1.0.1",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-a-temporary-explicit-money-model-compatibility-layer-in-the-frontend-that-can-correctly-interpret-existing-production-records-if-they-were-stored-in-whole-units-e-g-100-meaning-eur-100-00-while-new-records-are-stored-in-cents-without-performing-any-backend-data-migration",
+      "featureTitle": "Implement a temporary, explicit money-model compatibility layer in the frontend that can correctly interpret existing production records if they were stored in whole units (e.g., 100 meaning EUR 100.00) while new records are stored in cents, without performing any backend data migration.",
+      "files": [
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/lib/moneyModel.ts"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "blob-storage@2.0.3",
+        "invite-links@1.0.1",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-audit-and-update-all-money-input-flows-to-ensure-values-sent-to-the-backend-match-the-chosen-money-model-and-remain-consistent-with-backend-validation-while-preserving-existing-ux-2-decimal-input",
+      "featureTitle": "Audit and update all money input flows to ensure values sent to the backend match the chosen money model and remain consistent with backend validation, while preserving existing UX (2 decimal input).",
+      "files": [
+        "frontend/src/lib/moneyModel.ts"
+      ],
+      "components": [
+        "authorization@1.0.1",
+        "blob-storage@2.0.3",
+        "invite-links@1.0.1",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

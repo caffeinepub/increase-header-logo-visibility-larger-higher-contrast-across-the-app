@@ -1,0 +1,79 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-14T00:27:33.109Z",
+  "summary": "Diff implements a new centralized frontend money model/normalization layer and updates multiple pages/components to use cents-based arithmetic with a single conversion at render time. However, the requested admin-only backend query endpoint for raw stored monetary amounts is not evidenced in the backend diff summary, and it’s unclear whether all money input flows were audited/updated. The diff also includes several unrelated UI/UX and feature changes not requested by the BuildRequest.",
+  "missing_requirements": [
+    {
+      "id": "REQ-1",
+      "requirement": "Add a non-destructive, admin-only backend query endpoint to expose raw stored monetary amounts (IDs + raw Int amount + record type discriminator) for a specified groupId; non-admin callers must be rejected; no state changes.",
+      "reason": "backend/main.mo diff excerpt does not show any new admin-only query endpoint or related types/logic for returning sampled raw amounts across contributions, expenses, revenues, payouts, and planned payments. Frontend types mention RawAmountSample but no corresponding backend method is evidenced.",
+      "evidence": [
+        "backend/main.mo (truncated)",
+        "frontend/src/hooks/useQueries.ts (imports RawAmountSample type but no shown hook/method calling a raw-amount endpoint)"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "Audit and update all money input flows so values submitted match the chosen money model consistently (2-decimal UX preserved, clear validation errors, newly created records render with same scale).",
+      "reason": "A parsing/validation path is introduced (moneyModel.ts delegates via money.ts), but the diff summary does not provide evidence that all money-submitting dialogs/forms were updated to use it, nor that validation/error handling was consistently applied across those flows.",
+      "evidence": [
+        "frontend/src/lib/moneyModel.ts (truncated; shows intent to parse user input but implementation is truncated)",
+        "frontend/src/lib/money.ts (delegates parsing/validation, but no direct evidence of form/dialog adoption)",
+        "frontend-file-summaries.txt (mentions several dialogs but truncation prevents verifying they now submit normalized backend-expected units)"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Marketing/visual redesign changes on LandingPage (Africa-focused marketing text, hero background image, feature cards, CTAs).",
+      "reason": "BuildRequest explicitly restricts scope to money display consistency and verification tooling; unrelated UI/marketing changes were not requested.",
+      "evidence": [
+        "frontend-file-summaries.txt (frontend/src/pages/LandingPage.tsx description)"
+      ]
+    },
+    {
+      "description": "Header/logo visual changes including larger logo and high-contrast styling/new asset.",
+      "reason": "Not requested; considered unrelated UI/UX redesign beyond money display consistency/verification tooling.",
+      "evidence": [
+        "frontend-file-summaries.txt (frontend/src/components/Header.tsx description)"
+      ]
+    },
+    {
+      "description": "CreateGroupDialog enhancement to auto-generate milestones from crop lifecycle templates (e.g., Maize milestones).",
+      "reason": "Not requested as part of the money scaling fix; unrelated feature work.",
+      "evidence": [
+        "frontend-file-summaries.txt (frontend/src/components/CreateGroupDialog.tsx description)"
+      ]
+    },
+    {
+      "description": "MyGroups behavior change: Join Group now triggers automatic navigation to the group dashboard after successful join.",
+      "reason": "Not requested; unrelated UX/navigation change.",
+      "evidence": [
+        "frontend-file-summaries.txt (frontend/src/pages/MyGroups.tsx description)"
+      ]
+    },
+    {
+      "description": "Global styling/theme changes in index.css (OKLCH color system customized for agriculture theme).",
+      "reason": "Not requested; outside money display consistency and verification tooling.",
+      "evidence": [
+        "frontend-file-summaries.txt (frontend/src/index.css description)"
+      ]
+    }
+  ],
+  "confidence": 0.66,
+  "changed_files": [
+    "backend/main.mo",
+    "frontend-file-summaries.txt",
+    "frontend/src/components/MyPlannedPayments.tsx",
+    "frontend/src/components/PlannedPaymentsSection.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/lib/money.ts",
+    "frontend/src/lib/moneyMath.ts",
+    "frontend/src/lib/moneyModel.ts",
+    "frontend/src/pages/Contributions.tsx",
+    "frontend/src/pages/Dashboard.tsx",
+    "frontend/src/pages/GroupDashboard.tsx",
+    "project_state.json"
+  ]
+}
